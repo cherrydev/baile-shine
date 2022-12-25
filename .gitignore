@@ -1,0 +1,11 @@
+
+### VisualStudioCode ###
+.vscode/*
+stubs
+
+### Micropy Cli ###
+.micropy/
+!micropy.json
+!src/lib
+
+.DS_Store

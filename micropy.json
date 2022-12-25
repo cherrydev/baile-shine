@@ -1,0 +1,17 @@
+{
+    "name": "baile-shine",
+    "stubs": {
+        "esp32-micropython-1.9.4": "1.2.0"
+    },
+    "dev-packages": {
+        "micropy-cli": "*"
+    },
+    "packages": {
+        "micropy-cli": "*",
+        "invoke": "*",
+        "pytweening": "*"
+    },
+    "config": {
+        "vscode": true
+    }
+}
