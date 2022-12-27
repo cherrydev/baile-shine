@@ -30,7 +30,7 @@ class ModeButton:
     def is_touch(self):
         for signal in self.signals:
             if signal.value() == 1:
-                print("Pin pressed")
+                # print("Pin pressed")
                 return True
         return False
         # return any(pin.value() == 1 for pin in self.pins)

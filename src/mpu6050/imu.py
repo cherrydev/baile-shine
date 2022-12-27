@@ -37,8 +37,9 @@ THE SOFTWARE.
 # At runtime try to continue returning last good data value. We don't want aircraft
 # crashing. However if the I2C has crashed we're probably stuffed.
 
-from utime import sleep_ms
+from utime import sleep_ms, ticks_us
 from machine import I2C
+import micropython
 from .vector3d import Vector3d
 
 
@@ -48,8 +49,8 @@ class MPUException(OSError):
     '''
     pass
 
-
-def bytes_toint(msb, lsb):
+@micropython.viper
+def bytes_toint(msb: int, lsb: int) -> int:
     '''
     Convert two bytes to signed integer (big endian)
     for little endian reverse msb, lsb arguments
@@ -57,7 +58,20 @@ def bytes_toint(msb, lsb):
     '''
     if not msb & 0x80:
         return msb << 8 | lsb  # +ve
-    return - (((msb ^ 255) << 8) | (lsb ^ 255) + 1)
+    return -1 * (((msb ^ 255) << 8) | (lsb ^ 255) + 1)
+
+@micropython.viper
+def bytes_toint_v(buf: ptr8, ix_msb: int, ix_lsb: int) -> int:
+    '''
+    Convert two bytes to signed integer (big endian)
+    for little endian reverse msb, lsb arguments
+    Can be used in an interrupt handler
+    '''
+    msb = buf[ix_msb]
+    lsb = buf[ix_lsb]
+    if not msb & 0x80:
+        return msb << 8 | lsb  # +ve
+    return -1 * (((msb ^ 255) << 8) | (lsb ^ 255) + 1)
 
 
 class MPU6050(object):
@@ -110,6 +124,7 @@ class MPU6050(object):
         self.gyro_range = 0                     # Likewise for gyro
 
     # read from device
+    @micropython.native
     def _read(self, buf, memaddr, addr):        # addr = I2C device address, memaddr = memory location within the I2C device
         '''
         Read bytes to pre-allocated buffer Caller traps OSError.
@@ -117,6 +132,7 @@ class MPU6050(object):
         self._mpu_i2c.readfrom_mem_into(addr, memaddr, buf)
 
     # write to device
+    @micropython.native
     def _write(self, data, memaddr, addr):
         '''
         Perform a memory write. Caller should trap OSError.
@@ -354,6 +370,8 @@ class MPU6050(object):
         self._accel._vector[1] = self._accel._ivector[1]/scale[self.accel_range]
         self._accel._vector[2] = self._accel._ivector[2]/scale[self.accel_range]
 
+
+    @micropython.native
     def get_accel_irq(self):
         '''
         For use in interrupt handlers. Sets self._accel._ivector[] to signed
@@ -363,6 +381,17 @@ class MPU6050(object):
         self._accel._ivector[0] = bytes_toint(self.buf6[0], self.buf6[1])
         self._accel._ivector[1] = bytes_toint(self.buf6[2], self.buf6[3])
         self._accel._ivector[2] = bytes_toint(self.buf6[4], self.buf6[5])
+
+    @micropython.native
+    def accel_irq(self):
+        b = self.buf6
+        self._read(b, 0x3B, self.mpu_addr)
+        return (
+            bytes_toint_v(b, 0, 1), 
+            bytes_toint_v(b, 2, 3),
+            bytes_toint_v(b, 4, 5)
+            )
+
 
     # Gyro
     @property

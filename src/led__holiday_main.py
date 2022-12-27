@@ -1,7 +1,8 @@
 from hsv import hsv_rgb, norm_hsv
 import micropython
 import gc
-from machine import Pin, Timer, Signal
+from machine import Pin, Timer, Signal, I2C
+from mpu6050.imu import MPU6050
 from button_tempo import ButtonTempo
 from patterns.led_strip import LedStrip
 from myneopixel import NeoPixel
@@ -139,6 +140,24 @@ def change_mode():
 
 change_mode()
 timer.init(period = period, callback=isr)
+
+i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=800000)
+imu = MPU6050(i2c)
+
+isr_count = 0
+from utime import ticks_ms
+isr_tick = ticks_ms()
+def accel_isr(_):
+    global isr_count, isr_tick
+    imu.accel_irq()
+    isr_count += 1
+    if isr_count % 1000 == 0:
+        now = ticks_ms()
+        # print("ISR:", isr_count, " elapsed:", now - isr_tick)
+        isr_tick = now
+
+timer_accel = Timer(0)
+timer_accel.init(period = 1000 // 200, callback=accel_isr)
 
 loop.create_task(main())
 loop.run_forever()
