@@ -17,7 +17,14 @@ typedef struct{
 }iirFilter;
 
 typedef struct{
-	iirFilter *combFilters;
+	float strength;
+	float sizeReciprocal;
+	int size;
+	vector state;
+}combFilter;
+
+typedef struct{
+	combFilter *combFilters;
 	int firstFilterSize;
 	int filterCount;
 }combFilterSet;

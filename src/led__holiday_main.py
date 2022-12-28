@@ -18,7 +18,7 @@ import _thread
 
 from time import ticks_us, ticks_diff
 
-imu_freq = 100
+imu_freq = 200
 lfilter.init(100,190,imu_freq,0.9)
 
 touch_pin = Pin(15, Pin.IN, Pin.PULL_UP)
@@ -175,21 +175,21 @@ imu = MPU6050(i2c)
 isr_flag = uasyncio.ThreadSafeFlag()
 
 
-async def updateIsr():
+async def updateImu():
     while True:
         new_imu_val = imu.accel_irq()
-        # start = ticks_us()
+        start = ticks_us()
         lfilter.updateFilterChain(new_imu_val[2])
-        # elapsed = ticks_diff(ticks_us(), start)
-        # print("Elapsed ", elapsed)
+        elapsed = ticks_diff(ticks_us(), start)
+        print("Elapsed ", elapsed)
         await isr_flag.wait()
 
 def accel_isr(_):
     isr_flag.set()
 
 timer_accel = Timer(0)
-timer_accel.init(period = 1000 // 100, callback=accel_isr)
+timer_accel.init(period = 1000 // imu_freq, callback=accel_isr)
 
 loop.create_task(main())
-loop.create_task(updateIsr())
+loop.create_task(updateImu())
 loop.run_forever()

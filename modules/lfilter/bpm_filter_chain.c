@@ -50,7 +50,7 @@ strengthResult findBestStrength() {
         float strength = calculateStrength(
             combFilters.combFilters[i].state,
             combFilters.combFilters[i].state.size,
-            combFilters.combFilters[i].stateSizeReciprocal
+            combFilters.combFilters[i].sizeReciprocal
         );
         if (strength > bestResult.strength) {
             bestResult.strength = strength;
@@ -64,7 +64,7 @@ strengthResult updateFilterChain(float sample) {
     insertSample(&inputBuffer, sample);
     updateFilter(&hpfFilter, &inputBuffer);
     for (int i = 0; i < combFilters.filterCount; i++) {
-        updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
+        updateCombFilter(&combFilters.combFilters[i], &hpfFilter.state);
     }
     return findBestStrength();
 }

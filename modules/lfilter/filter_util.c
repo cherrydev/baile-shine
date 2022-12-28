@@ -15,6 +15,15 @@ iirFilter newIirFilter(int stateSize, const vector denomCoeffs, const vector num
     return newFilter;
 }
 
+combFilter newCombFilter(int size, float strength) {
+    return (combFilter) {
+        .size = size,
+        .state = newVector(size),
+        .sizeReciprocal = 1.0f / size,
+        .strength = strength
+    };
+}
+
 vector newVector(int size) {
     return (vector) {
         .size = size,
@@ -26,13 +35,11 @@ combFilterSet newCombFilterSet(int firstFilterSize, int filterCount, float stren
     combFilterSet result = {
         .firstFilterSize = firstFilterSize,
         .filterCount = filterCount,
-        .combFilters = calloc(filterCount, sizeof(iirFilter))
+        .combFilters = calloc(filterCount, sizeof(combFilter))
     };
     for (int i = 0; i < filterCount; i++) {
         int filterSize = firstFilterSize + i;
-        vector denom = makeCombFilterDenom(filterSize, strength);
-        vector num = makeCombFilterNum(strength);
-        result.combFilters[i] = newIirFilter(filterSize, denom, num);
+        result.combFilters[i] = newCombFilter(filterSize, strength);
 
     }
     return result;
@@ -45,7 +52,7 @@ strengthResult newStrengthResult(int filterSize, float strength) {
     };
 }
 
-iirFilter* getFilter(int filterSize, combFilterSet *combFilters) {
+combFilter* getFilter(int filterSize, combFilterSet *combFilters) {
     int largestFilter = combFilters->filterCount - 1;
     if (filterSize > combFilters->firstFilterSize + largestFilter) {
         fprintf(stderr, "Invalid filter size %i. Largest filter is %i\n", filterSize, largestFilter);
@@ -62,6 +69,20 @@ void insertSample(vector *samples, float newSample) {
     samples->values[samples->size - 1] = newSample;
 }
 
+void updateCombFilter(combFilter* filter, vector *parentState) {
+    int newStateSampleIdx, newParentSampleIdx, j;
+    float sum = 0.0f;
+    insertSample(&filter->state, 0.0f);
+    newStateSampleIdx = filter->state.size - 1;
+    newParentSampleIdx = parentState->size - 1;
+
+    sum += (1 - filter->strength) * parentState->values[newParentSampleIdx];
+    // first coeff is 1.0 runs against last state index which is zero. Ignore.
+    // last coeff is -strength against first state index
+    sum -= -(filter->strength) * filter->state.values[0];
+    filter->state.values[newStateSampleIdx] = sum;
+}
+
 void updateFilter(iirFilter* filter, vector *parentState) {
     int newStateSampleIdx, newParentSampleIdx, j;
 	float sum = 0.0f;
@@ -70,8 +91,7 @@ void updateFilter(iirFilter* filter, vector *parentState) {
     insertSample(&filter->state, 0.0f);
     newStateSampleIdx = filter->state.size - 1;
     newParentSampleIdx = parentState->size - 1;
-    // printf("Last sample in state is %f\n", filter->state.values[newStateSampleIdx]);
-    // printf("Second last sample in state is %f\n", filter->state.values[newStateSampleIdx-1]);
+
     for(j=0;j<filter->numCoeffs.size;j++){
         int currentParentSampleIdx = newParentSampleIdx-j;
         if(currentParentSampleIdx>=0) {

@@ -13,11 +13,13 @@ combFilterSet newCombFilterSet(int firstFilterSize, int filterCount, float stren
 
 strengthResult newStrengthResult(int filterSize, float strength);
 
-iirFilter* getFilter(int filterSize, combFilterSet *combFilters);
+combFilter* getFilter(int filterSize, combFilterSet *combFilters);
 
 void insertSample(vector *samples, float newSample);
 
 void updateFilter(iirFilter* filter, vector *parentState);
+
+void updateCombFilter(combFilter* filter, vector *parentState);
 
 vector makeCombFilterDenom(int combSampleSize, float filterStrength);
 
