@@ -4,7 +4,7 @@
 #include <math.h>
 
 iirFilter newIirFilter(int stateSize, const vector denomCoeffs, const vector numCoeffs) {
-    float numZeroReciprocal = 1.0f / numCoeffs.values[0];
+    float numZeroReciprocal = 1 / numCoeffs.values[0];
     iirFilter newFilter = {
         .state = newVector(stateSize),
         .denomCoeffs = denomCoeffs,
@@ -63,17 +63,22 @@ void insertSample(vector *samples, float newSample) {
 
 void updateFilter(iirFilter* filter, vector *parentState) {
     int newStateSampleIdx, newParentSampleIdx, j;
-	float sum;
+	float sum = 0.0f;
     
     // Advance the filter state by one sample
     insertSample(&filter->state, 0.0f);
     newStateSampleIdx = filter->state.size - 1;
     newParentSampleIdx = parentState->size - 1;
+    // printf("Last sample in state is %f\n", filter->state.values[newStateSampleIdx]);
+    // printf("Second last sample in state is %f\n", filter->state.values[newStateSampleIdx-1]);
     for(j=0;j<filter->numCoeffs.size;j++){
         int currentParentSampleIdx = newParentSampleIdx-j;
         if(currentParentSampleIdx>=0) {
             sum += filter->numCoeffs.values[j]*parentState->values[currentParentSampleIdx];
-            // printf("updated parent state (size %i) from index %i\n", parentState->size, newParentSampleIdx-j);
+            // printf("numCoef[%i](%f) * parent[%i](%f) = ")
+            // printf("with num[%i]=[%f] calculating from parent[%i] Sum is now %f\n",
+            //  j, numCoeffs.values[j], currentParentSampleIdx, sum
+            //  );
         }
         else {
             break;
@@ -84,19 +89,20 @@ void updateFilter(iirFilter* filter, vector *parentState) {
         int currentStateSampleIdx = newStateSampleIdx-j;
         if(currentStateSampleIdx>=0) {
             sum -= filter->denomCoeffs.values[j]*filter->state.values[currentStateSampleIdx];
+            // printf("with denom[%i] calculating from parent[%i]. Sum is now %f\n",
+            //  j, currentStateSampleIdx, sum
+            //  );
         }
         else {
             break;
         }
     }
-    if (filter->denomCoeffs.values[0] == 0) {
-        fputs("Zero!!\n", stderr);
-        abort();
-    }
     sum /= filter->denomCoeffs.values[0]; // recriprocal
+    // printf("Setting state %i/%i to %f\n", newStateSampleIdx, filter->state.size - 1, sum);
     filter->state.values[newStateSampleIdx] = sum;
     // filter->state.values[i] = sum * filter->numZeroReciprocal;
 }
+
 
 float bpmFromCombSize(int combSize, int sampleRate) {
     return ((float)combSize - 1) / (float)sampleRate * 60.0f;
@@ -108,7 +114,7 @@ int combSizeFromBpm(float bpm, int sampleRate) {
 
 float calculateStrength(vector filteredSignal, int windowSize, float windowSizeReciprocal) {
 	float sum = 0.0f;
-	for (int i = filteredSignal.size - windowSize - 1; i < filteredSignal.size; i++) {
+	for (int i = filteredSignal.size - windowSize; i < filteredSignal.size; i++) {
 		sum += fabsf(filteredSignal.values[i]);
 	}
 	// Use reciprical of windowSize and a multiply!

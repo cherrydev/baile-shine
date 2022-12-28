@@ -1,7 +1,9 @@
 #import "filter_util.h"
 
 static float HPF_DENOM_SAMPLES[] = {  1.     ,    -2.98452829,  2.96915226, -0.98462372};
+// static float HPF_DENOM_SAMPLES[] = {  -0.98462372, 2.96915226,  -2.98452829, 1.0};
 static float HPF_NUM_SAMPLES[] = {  0.99228803, -2.9768641,   2.9768641,  -0.99228803};
+// static float HPF_NUM_SAMPLES[] = { -0.99228803, 2.9768641, -2.9768641, 0.99228803 };
 
 static const vector HPF_DENOM = {
     .size = sizeof(HPF_DENOM_SAMPLES) / sizeof(float),
@@ -61,8 +63,7 @@ strengthResult updateFilterChain(float sample) {
     insertSample(&inputBuffer, sample);
     updateFilter(&hpfFilter, &inputBuffer);
     for (int i = 0; i < combFilters.filterCount; i++) {
-        // updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
-        // updateFilter(&combFilters.combFilters[i], &inputBuffer);
+        updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
     }
     return findBestStrength();
 }

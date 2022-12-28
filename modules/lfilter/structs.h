@@ -1,3 +1,4 @@
+#pragma once
 typedef struct{
 	float* values;
 	int size;

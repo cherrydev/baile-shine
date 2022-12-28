@@ -1,6 +1,6 @@
-
-#import "structs.h"
-#import <stdlib.h>
+#pragma once
+#include "structs.h"
+#include <stdlib.h>
 
 #define max(a,b) (a >= b) ? a : b
 #define min(a,b) (a <= b) ? a : b

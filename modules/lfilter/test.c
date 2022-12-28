@@ -122,10 +122,12 @@ int main(int argC,char* argV[])
     if (argC > 1) {
         vector signal = loadSignal(argV[1]);
         printf("Loaded signal with %i samples\n", signal.size);
-        // strengthResult best = updateFilterChain(signal.values[0]);
+        // for (int i = 0; i < 100; i++) {
+        //     strengthResult best = updateFilterChain(signal.values[i]);
+        // }
         for (int i = 0; i < signal.size; i++) {
             strengthResult best = updateFilterChain(signal.values[i]);
-            // printf("At sample %i best strength is %f at size %i\n", i, best.strength, best.filterSize);
+            printf("At sample %i best strength is %f at size %i\n", i, best.strength, best.filterSize);
         }
     }
     // printVector(getCombFilterSet()->combFilters[0].state, "/tmp/combFilterState.txt");
