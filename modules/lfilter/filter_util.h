@@ -9,7 +9,7 @@ iirFilter newIirFilter(int stateSize, vector denomCoeffs, vector numCoeffs);
 
 vector newVector(int size);
 
-combFilterSet newCombFilterSet(int firstFilterSize, int filterCount);
+combFilterSet newCombFilterSet(int firstFilterSize, int filterCount, float strength);
 
 strengthResult newStrengthResult(int filterSize, float strength);
 
@@ -18,6 +18,10 @@ iirFilter* getFilter(int filterSize, combFilterSet *combFilters);
 void insertSample(vector *samples, float newSample);
 
 void updateFilter(iirFilter* filter, vector *parentState);
+
+vector makeCombFilterDenom(int combSampleSize, float filterStrength);
+
+vector makeCombFilterNum(float filterStrength);
 
 float bpmFromCombSize(int combSize, int sampleRate);
 

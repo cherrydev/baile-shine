@@ -40,7 +40,7 @@ void init(float minBpm, float maxBpm, int sampleRate) {
         HPF_DENOM, 
         HPF_NUM
     );
-    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1);
+    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1, 0.9f);
 }
 
 strengthResult findBestStrength() {
