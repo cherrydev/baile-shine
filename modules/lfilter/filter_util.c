@@ -62,23 +62,39 @@ void insertSample(vector *samples, float newSample) {
 }
 
 void updateFilter(iirFilter* filter, vector *parentState) {
-    int i,j;
+    int newStateSampleIdx, newParentSampleIdx, j;
 	float sum;
     
     // Advance the filter state by one sample
-    // insertSample(&filter->state, 0.0f);
-    i = filter->state.size - 1;
+    insertSample(&filter->state, 0.0f);
+    newStateSampleIdx = filter->state.size - 1;
+    newParentSampleIdx = parentState->size - 1;
     for(j=0;j<filter->denomCoeffs.size;j++){
-        if(i-j>=0)
-            sum += filter->denomCoeffs.values[j]*parentState->values[i-j];
+        int currentParentSampleIdx = newParentSampleIdx-j;
+        if(currentParentSampleIdx>=0) {
+            sum += filter->denomCoeffs.values[j]*parentState->values[currentParentSampleIdx];
+            // printf("updated parent state (size %i) from index %i\n", parentState->size, newParentSampleIdx-j);
+        }
+        else {
+            break;
+        }
     }
     
     for(j=0;j<filter->numCoeffs.size;j++){
-        if(i-j>=0)
-            sum -= filter->numCoeffs.values[j]*filter->state.values[i-j];
+        int currentStateSampleIdx = newStateSampleIdx-j;
+        if(currentStateSampleIdx>=0) {
+            sum -= filter->numCoeffs.values[j]*filter->state.values[currentStateSampleIdx];
+        }
+        else {
+            break;
+        }
     }
-    sum /= filter->numCoeffs.values[0]; // recriprocal
-    filter->state.values[i] = sum;
+    if (filter->denomCoeffs.values[0] == 0) {
+        fputs("Zero!!\n", stderr);
+        abort();
+    }
+    sum /= filter->denomCoeffs.values[0]; // recriprocal
+    filter->state.values[newStateSampleIdx] = sum;
     // filter->state.values[i] = sum * filter->numZeroReciprocal;
 }
 

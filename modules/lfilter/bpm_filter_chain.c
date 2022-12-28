@@ -34,7 +34,7 @@ void init(float minBpm, float maxBpm, int sampleRate) {
     );
     inputBuffer = newVector(combSizeMax);
     hpfFilter = newIirFilter(
-        max(HPF_DENOM.size, HPF_NUM.size), 
+        combSizeMax, 
         HPF_DENOM, 
         HPF_NUM
     );
@@ -61,7 +61,8 @@ strengthResult updateFilterChain(float sample) {
     insertSample(&inputBuffer, sample);
     updateFilter(&hpfFilter, &inputBuffer);
     for (int i = 0; i < combFilters.filterCount; i++) {
-        updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
+        // updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
+        // updateFilter(&combFilters.combFilters[i], &inputBuffer);
     }
     return findBestStrength();
 }

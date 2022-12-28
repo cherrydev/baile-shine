@@ -116,14 +116,19 @@ int main(int argC,char* argV[])
     }
     puts("All filters correct size\n");
 
+    printVector(getHpfFilter()->denomCoeffs, "/tmp/denomCoeffs");
+    printVector(getHpfFilter()->numCoeffs, "/tmp/numCoeffs");
+
     if (argC > 1) {
         vector signal = loadSignal(argV[1]);
         printf("Loaded signal with %i samples\n", signal.size);
+        // strengthResult best = updateFilterChain(signal.values[0]);
         for (int i = 0; i < signal.size; i++) {
             strengthResult best = updateFilterChain(signal.values[i]);
-            printf("At sample %i best strength is %f at size %i\n", i, best.strength, best.filterSize);
+            // printf("At sample %i best strength is %f at size %i\n", i, best.strength, best.filterSize);
         }
     }
-    printVector(getHpfFilter()->state, "/tmp/inputbuffer.txt");
+    // printVector(getCombFilterSet()->combFilters[0].state, "/tmp/combFilterState.txt");
+    printVector(getHpfFilter()->state, "/tmp/hpf.txt");
 	return 0;
 }
