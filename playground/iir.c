@@ -8,8 +8,18 @@ typedef struct{
 	int size;
 }vector;
 
-float hpf_denom[] = { 1.        , -2.94287818,  2.88635027, -0.94345706};
-float hpf_num[] = { 0.97158569, -2.91475706,  2.91475706, -0.97158569};
+// 0.01 hz
+// float hpf_denom[] = { 1.      ,   -2.99767411,  2.99534915, -0.99767505};
+// float hpf_num[] = { 0.99883729, -2.99651186,  2.99651186, -0.99883729};
+
+// [ 1.         -2.98452829  2.96915226 -0.98462372] [ 0.99228803 -2.9768641   2.9768641  -0.99228803]
+// 0.1 hz
+float hpf_denom[] = {  1.     ,    -2.98452829,  2.96915226, -0.98462372};
+float hpf_num[] = {  0.99228803, -2.9768641,   2.9768641,  -0.99228803};
+
+// 0.5 hz
+// float hpf_denom[] = { 1.        , -2.94287818,  2.88635027, -0.94345706};
+// float hpf_num[] = { 0.97158569, -2.91475706,  2.91475706, -0.97158569};
 
 char * getLine(FILE* fp) {
     char * line = malloc(100), * linep = line;
@@ -98,7 +108,7 @@ vector makeCombFilterCoeff1(int combSampleSize) {
 vector makeCombFilterCoeff2() {
 	vector coeff2;
 	coeff2.values = (float*)calloc(1, sizeof(float));
-	coeff2.values[0] = 1.0f;
+	coeff2.values[0] = 0.1f;
 	coeff2.size = 1;
 	return coeff2;
 }
@@ -141,17 +151,10 @@ float calculateStrength(vector filteredSignal, int windowSize) {
 	for (int i = filteredSignal.size - windowSize - 1; i < filteredSignal.size; i++) {
 		sum += fabsf(filteredSignal.values[i]);
 	}
+	// Use reciprical of windowSize and a multiply!
 	float str = sum / windowSize;
 	printf("Str %f for size %i\n", str, windowSize);
 	return str;
-
-	// float sum = 0.0f;
-	// for (int i = 0; i < filteredSignal.size; i++) {
-	// 	sum += fabsf(filteredSignal.values[i]);
-	// }
-	// float str = sum / filteredSignal.size;
-	// printf("Str %f for size %i\n", str, windowSize);
-	// return str;
 }
 
 vector processSignal(vector coeff1, vector coeff2, vector signal) {
@@ -182,25 +185,42 @@ vector processSignal(vector coeff1, vector coeff2, vector signal) {
 	return filteredSignal;
 }
 
-void normalizeOffset(vector signal) {
-	// float sum = 0;
-	// for (int i = 0; i < signal.size; i++) {
-	// 	sum += signal.values[i];
-	// }
-	// float offset = sum / signal.size;
-	// printf("Normalizing with offset %f (%.5f / %i)\n", offset, sum, signal.size);
-	// for (int i = 0; i < signal.size; i++) {
-	// 	signal.values[i] -= offset;
-	// }
-	// printVector(signal, "normalized.txt");
+float calcDcBias(vector signal) {
+	float sum = 0;
+	for (int i = 0; i < signal.size; i++) {
+		sum += signal.values[i];
+	}
+	return sum / signal.size;
+}
+
+void normalizeOffsetHpf(vector signal) {
 	vector num, denom, result;
 	num.values = hpf_num;
 	num.size = sizeof(hpf_num) / sizeof(float);
 	denom.values = hpf_denom;
 	denom.size = sizeof(hpf_denom) / sizeof(float);
 	result = processSignal(denom, num, signal);
+	printf("HPF result has %f remaining bias\n", calcDcBias(result));
 	printVector(result, "hpf.txt");
-	signal.values = result.values;
+	for (int i = 0; i < result.size; i++) {
+		signal.values[i] = result.values[i];
+	}
+}
+
+void normalizeOffset(vector signal) {
+	float offset = calcDcBias(signal);
+	for (int i = 0; i < signal.size; i++) {
+		signal.values[i] -= offset;
+	}
+	// printVector(signal, "normalized.txt");
+}
+
+void normalizeOffsetFixed(vector signal) {
+	float offset = -9.8f;
+	for (int i = 0; i < signal.size; i++) {
+		signal.values[i] -= offset;
+	}
+	// printVector(signal, "normalized.txt");
 }
 
 int findBestFitCombFilter(vector signal, int combSizeMin, int combSizeMax) {
@@ -237,7 +257,7 @@ int processSignalFile(char* fileName, int sampleRate){
 	vector signal;
 
 	signal = loadSignal(fileName);
-	normalizeOffset(signal);
+	normalizeOffsetHpf(signal);
 
 	int minBpm = 100;
 	int maxBpm = 250;

@@ -1,7 +1,4 @@
-typedef struct{
-	float* values;
-	int size;
-}vector;
+#include "structs.h"
 
 vector processSignalFile();
 void printVector(vector v);
