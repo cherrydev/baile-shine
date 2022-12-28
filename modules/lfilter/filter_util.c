@@ -4,13 +4,13 @@
 #include <math.h>
 
 iirFilter newIirFilter(int stateSize, const vector denomCoeffs, const vector numCoeffs) {
-    float numZeroReciprocal = 1 / numCoeffs.values[0];
+    float numZeroReciprocal = 1.0f / numCoeffs.values[0];
     iirFilter newFilter = {
         .state = newVector(stateSize),
         .denomCoeffs = denomCoeffs,
         .numCoeffs = numCoeffs,
         .numZeroReciprocal = numZeroReciprocal,
-        .stateSizeReciprocal = 1 / stateSize
+        .stateSizeReciprocal = 1.0f / stateSize
     };
     return newFilter;
 }
@@ -69,10 +69,10 @@ void updateFilter(iirFilter* filter, vector *parentState) {
     insertSample(&filter->state, 0.0f);
     newStateSampleIdx = filter->state.size - 1;
     newParentSampleIdx = parentState->size - 1;
-    for(j=0;j<filter->denomCoeffs.size;j++){
+    for(j=0;j<filter->numCoeffs.size;j++){
         int currentParentSampleIdx = newParentSampleIdx-j;
         if(currentParentSampleIdx>=0) {
-            sum += filter->denomCoeffs.values[j]*parentState->values[currentParentSampleIdx];
+            sum += filter->numCoeffs.values[j]*parentState->values[currentParentSampleIdx];
             // printf("updated parent state (size %i) from index %i\n", parentState->size, newParentSampleIdx-j);
         }
         else {
@@ -80,10 +80,10 @@ void updateFilter(iirFilter* filter, vector *parentState) {
         }
     }
     
-    for(j=0;j<filter->numCoeffs.size;j++){
+    for(j=0;j<filter->denomCoeffs.size;j++){
         int currentStateSampleIdx = newStateSampleIdx-j;
         if(currentStateSampleIdx>=0) {
-            sum -= filter->numCoeffs.values[j]*filter->state.values[currentStateSampleIdx];
+            sum -= filter->denomCoeffs.values[j]*filter->state.values[currentStateSampleIdx];
         }
         else {
             break;
