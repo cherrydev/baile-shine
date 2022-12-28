@@ -13,6 +13,13 @@ from patterns.vu import VU
 from patterns.pulse import Pulse
 from mode_button import ModeButton
 import uasyncio
+import lfilter
+import _thread
+
+from time import ticks_us, ticks_diff
+
+imu_freq = 100
+lfilter.init(100,190,imu_freq,0.9)
 
 touch_pin = Pin(15, Pin.IN, Pin.PULL_UP)
 ttempo = ButtonTempo(touch_pin)
@@ -25,7 +32,6 @@ hsv_bytes_left = bytearray(pattern_size * 3)
 strip_left = LedStrip(hsv_buff=hsv_bytes_left, buff_start_idx=0, led_count=pattern_size)
 np = NeoPixel(Pin(25), num_leds)
 
-# mode_touch = ModeButton(Pin(4, Pin.IN, Pin.PULL_UP))
 mode_touch = ModeButton(
     Signal(Pin(0, Pin.IN, Pin.PULL_UP), invert=True),
     Signal(Pin(4, Pin.IN, Pin.PULL_UP), invert=True)
@@ -35,7 +41,25 @@ def print_triplets(buf):
     for i in range(0, len(buf), 3):
         print((buf[i], buf[i+1], buf[i+2]))
 
+def read_imu():
+    # global isr_lock, isr_queue_size, isr_queue
+    # isr_lock.acquire(1)
+    # new_isr = [0] * isr_queue_size
+    # for i in range(0, isr_queue_size):
+    #     new_isr[i] = isr_queue[i]
+    # isr_queue_size = 0
+    # isr_lock.release()
+    # for sample in new_isr:
+    #     lfilter.updateFilterChain(sample[2])
+    start = ticks_us()
+    best_strength = lfilter.findBestStrength()
+    print("bestStrength elapsed: ", ticks_diff(ticks_us(), start), "us")
+    if best_strength[0] > 0:
+        print("Best bpm is: ", imu_freq / best_strength[0] * 60, " ", best_strength[1])
+
+
 def update(_):
+    read_imu()
     ttempo.on_update()
     if mode_touch.update(): change_mode()
     # if pattern: pattern.update()
@@ -144,20 +168,28 @@ timer.init(period = period, callback=isr)
 i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=800000)
 imu = MPU6050(i2c)
 
-isr_count = 0
-from utime import ticks_ms
-isr_tick = ticks_ms()
+
+    
+    
+
+isr_flag = uasyncio.ThreadSafeFlag()
+
+
+async def updateIsr():
+    while True:
+        new_imu_val = imu.accel_irq()
+        # start = ticks_us()
+        lfilter.updateFilterChain(new_imu_val[2])
+        # elapsed = ticks_diff(ticks_us(), start)
+        # print("Elapsed ", elapsed)
+        await isr_flag.wait()
+
 def accel_isr(_):
-    global isr_count, isr_tick
-    imu.accel_irq()
-    isr_count += 1
-    if isr_count % 1000 == 0:
-        now = ticks_ms()
-        # print("ISR:", isr_count, " elapsed:", now - isr_tick)
-        isr_tick = now
+    isr_flag.set()
 
 timer_accel = Timer(0)
-timer_accel.init(period = 1000 // 200, callback=accel_isr)
+timer_accel.init(period = 1000 // 100, callback=accel_isr)
 
 loop.create_task(main())
+loop.create_task(updateIsr())
 loop.run_forever()

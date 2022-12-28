@@ -4,7 +4,8 @@ add_library(usermod_lfilter INTERFACE)
 # Add our source files to the lib
 target_sources(usermod_lfilter INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/examplemodule.c
-    ${CMAKE_CURRENT_LIST_DIR}/iir.c
+    ${CMAKE_CURRENT_LIST_DIR}/filter_util.c
+    ${CMAKE_CURRENT_LIST_DIR}/bpm_filter_chain.c
 )
 
 # Add the current directory as an include directory.

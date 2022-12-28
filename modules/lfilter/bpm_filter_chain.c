@@ -1,4 +1,5 @@
-#import "filter_util.h"
+#include "bpm_filter_chain.h"
+#include <stdio.h>
 
 static float HPF_DENOM_SAMPLES[] = {  1.     ,    -2.98452829,  2.96915226, -0.98462372};
 // static float HPF_DENOM_SAMPLES[] = {  -0.98462372, 2.96915226,  -2.98452829, 1.0};
@@ -27,7 +28,7 @@ int getSystemSampleRate() { return systemSampleRate; }
 vector* getInputBuffer() { return &inputBuffer; }
 // end
 
-void init(float minBpm, float maxBpm, int sampleRate) {
+void init(float minBpm, float maxBpm, int sampleRate, float filterStrength) {
     systemSampleRate = sampleRate;
     int combSizeMin = combSizeFromBpm(maxBpm, sampleRate);
 	int combSizeMax = combSizeFromBpm(minBpm, sampleRate);
@@ -40,7 +41,7 @@ void init(float minBpm, float maxBpm, int sampleRate) {
         HPF_DENOM, 
         HPF_NUM
     );
-    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1, 0.9f);
+    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1, filterStrength);
 }
 
 strengthResult findBestStrength() {

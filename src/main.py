@@ -1,6 +1,5 @@
 # import led_main
 import led__holiday_main
-import 
 # from machine import SoftI2C, I2C, Pin, sleep
 
 # from mpu6050 import accel

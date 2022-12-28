@@ -4,12 +4,12 @@
 #include <math.h>
 
 iirFilter newIirFilter(int stateSize, const vector denomCoeffs, const vector numCoeffs) {
-    float numZeroReciprocal = 1 / numCoeffs.values[0];
+    float denomZeroReciprocal = 1 / denomCoeffs.values[0];
     iirFilter newFilter = {
         .state = newVector(stateSize),
         .denomCoeffs = denomCoeffs,
         .numCoeffs = numCoeffs,
-        .numZeroReciprocal = numZeroReciprocal,
+        .denomZeroReciprocal = denomZeroReciprocal,
         .stateSizeReciprocal = 1.0f / stateSize
     };
     return newFilter;
@@ -55,8 +55,6 @@ iirFilter* getFilter(int filterSize, combFilterSet *combFilters) {
 }
 
 void insertSample(vector *samples, float newSample) {
-    float temp;
-
     // Advance [1] to [0], then [2] to [1], etc. Discard original [0]
     for(int i = 1; i < samples->size; i++) {
         samples->values[i - 1] = samples->values[i];
@@ -100,10 +98,7 @@ void updateFilter(iirFilter* filter, vector *parentState) {
             break;
         }
     }
-    sum /= filter->denomCoeffs.values[0]; // recriprocal
-    // printf("Setting state %i/%i to %f\n", newStateSampleIdx, filter->state.size - 1, sum);
-    filter->state.values[newStateSampleIdx] = sum;
-    // filter->state.values[i] = sum * filter->numZeroReciprocal;
+    filter->state.values[newStateSampleIdx] = sum * filter->denomZeroReciprocal;
 }
 
 vector makeCombFilterDenom(int combSampleSize, float filterStrength) {
