@@ -157,7 +157,7 @@ float calculateStrength(vector filteredSignal, int windowSize) {
 	return str;
 }
 
-vector processSignal(vector coeff1, vector coeff2, vector signal) {
+vector processSignal(vector denom, vector num, vector signal) {
 	int i,j;
 	float sum;
 	vector filteredSignal;
@@ -168,17 +168,17 @@ vector processSignal(vector coeff1, vector coeff2, vector signal) {
 	for(i=0;i<signal.size;i++){
 		sum = 0;
 		
-		for(j=0;j<coeff2.size;j++){
+		for(j=0;j<num.size;j++){
 			if(i-j>=0)
-				sum += coeff2.values[j]*signal.values[i-j];
+				sum += num.values[j]*signal.values[i-j];
 		}
 		
-		for(j=0;j<coeff1.size;j++){
+		for(j=0;j<denom.size;j++){
 			if(i-j>=0)
-				sum -= coeff1.values[j]*filteredSignal.values[i-j];
+				sum -= denom.values[j]*filteredSignal.values[i-j];
 		}
 		
-		sum /= coeff1.values[0];
+		sum /= denom.values[0];
 		filteredSignal.values[i] = sum;
 	}
 	

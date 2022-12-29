@@ -103,7 +103,7 @@ int main(int argC,char* argV[])
 	// 	}
 	// 	processSignalFile(argV[1], sampleRate);
 	// }
-    init(100,190, 200);
+    init(100,190, 200, 0.9f);
     combFilterSet *filters = getCombFilterSet();
     printf("Got filters starting with size %i and count %i\n", filters->firstFilterSize, filters->filterCount);
     int firstFilterSize = filters->firstFilterSize;

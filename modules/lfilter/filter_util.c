@@ -4,15 +4,24 @@
 #include <math.h>
 
 iirFilter newIirFilter(int stateSize, const vector denomCoeffs, const vector numCoeffs) {
-    float numZeroReciprocal = 1 / numCoeffs.values[0];
+    float denomZeroReciprocal = 1 / denomCoeffs.values[0];
     iirFilter newFilter = {
         .state = newVector(stateSize),
         .denomCoeffs = denomCoeffs,
         .numCoeffs = numCoeffs,
-        .numZeroReciprocal = numZeroReciprocal,
+        .denomZeroReciprocal = denomZeroReciprocal,
         .stateSizeReciprocal = 1.0f / stateSize
     };
     return newFilter;
+}
+
+combFilter newCombFilter(int size, float strength) {
+    return (combFilter) {
+        .size = size,
+        .state = newVector(size),
+        .sizeReciprocal = 1.0f / size,
+        .strength = strength
+    };
 }
 
 vector newVector(int size) {
@@ -22,15 +31,16 @@ vector newVector(int size) {
     };
 }
 
-combFilterSet newCombFilterSet(int firstFilterSize, int filterCount) {
+combFilterSet newCombFilterSet(int firstFilterSize, int filterCount, float strength) {
     combFilterSet result = {
         .firstFilterSize = firstFilterSize,
         .filterCount = filterCount,
-        .combFilters = calloc(filterCount, sizeof(iirFilter))
+        .combFilters = calloc(filterCount, sizeof(combFilter))
     };
     for (int i = 0; i < filterCount; i++) {
         int filterSize = firstFilterSize + i;
-        result.combFilters[i] = newIirFilter(filterSize, newVector(filterSize), newVector(1));
+        result.combFilters[i] = newCombFilter(filterSize, strength);
+
     }
     return result;
 }
@@ -42,7 +52,7 @@ strengthResult newStrengthResult(int filterSize, float strength) {
     };
 }
 
-iirFilter* getFilter(int filterSize, combFilterSet *combFilters) {
+combFilter* getFilter(int filterSize, combFilterSet *combFilters) {
     int largestFilter = combFilters->filterCount - 1;
     if (filterSize > combFilters->firstFilterSize + largestFilter) {
         fprintf(stderr, "Invalid filter size %i. Largest filter is %i\n", filterSize, largestFilter);
@@ -52,13 +62,25 @@ iirFilter* getFilter(int filterSize, combFilterSet *combFilters) {
 }
 
 void insertSample(vector *samples, float newSample) {
-    float temp;
-
     // Advance [1] to [0], then [2] to [1], etc. Discard original [0]
     for(int i = 1; i < samples->size; i++) {
         samples->values[i - 1] = samples->values[i];
     }
     samples->values[samples->size - 1] = newSample;
+}
+
+void updateCombFilter(combFilter* filter, vector *parentState) {
+    int newStateSampleIdx, newParentSampleIdx, j;
+    float sum = 0.0f;
+    insertSample(&filter->state, 0.0f);
+    newStateSampleIdx = filter->state.size - 1;
+    newParentSampleIdx = parentState->size - 1;
+
+    sum += (1 - filter->strength) * parentState->values[newParentSampleIdx];
+    // first coeff is 1.0 runs against last state index which is zero. Ignore.
+    // last coeff is -strength against first state index
+    sum -= -(filter->strength) * filter->state.values[0];
+    filter->state.values[newStateSampleIdx] = sum;
 }
 
 void updateFilter(iirFilter* filter, vector *parentState) {
@@ -69,8 +91,7 @@ void updateFilter(iirFilter* filter, vector *parentState) {
     insertSample(&filter->state, 0.0f);
     newStateSampleIdx = filter->state.size - 1;
     newParentSampleIdx = parentState->size - 1;
-    // printf("Last sample in state is %f\n", filter->state.values[newStateSampleIdx]);
-    // printf("Second last sample in state is %f\n", filter->state.values[newStateSampleIdx-1]);
+
     for(j=0;j<filter->numCoeffs.size;j++){
         int currentParentSampleIdx = newParentSampleIdx-j;
         if(currentParentSampleIdx>=0) {
@@ -97,10 +118,24 @@ void updateFilter(iirFilter* filter, vector *parentState) {
             break;
         }
     }
-    sum /= filter->denomCoeffs.values[0]; // recriprocal
-    // printf("Setting state %i/%i to %f\n", newStateSampleIdx, filter->state.size - 1, sum);
-    filter->state.values[newStateSampleIdx] = sum;
-    // filter->state.values[i] = sum * filter->numZeroReciprocal;
+    filter->state.values[newStateSampleIdx] = sum * filter->denomZeroReciprocal;
+}
+
+vector makeCombFilterDenom(int combSampleSize, float filterStrength) {
+	vector coeff1;
+	coeff1.values = (float*)calloc(combSampleSize, sizeof(float));
+	coeff1.size = combSampleSize;
+	coeff1.values[combSampleSize - 1] = -filterStrength;
+	coeff1.values[0] = 1.0f;
+	return coeff1;
+}
+
+vector makeCombFilterNum(float filterStrength) {
+	vector coeff2;
+	coeff2.values = (float*)calloc(1, sizeof(float));
+	coeff2.values[0] = 1.0f - filterStrength;
+	coeff2.size = 1;
+	return coeff2;
 }
 
 

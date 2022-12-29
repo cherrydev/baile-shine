@@ -1,4 +1,5 @@
-#import "filter_util.h"
+#include "bpm_filter_chain.h"
+#include <stdio.h>
 
 static float HPF_DENOM_SAMPLES[] = {  1.     ,    -2.98452829,  2.96915226, -0.98462372};
 // static float HPF_DENOM_SAMPLES[] = {  -0.98462372, 2.96915226,  -2.98452829, 1.0};
@@ -27,7 +28,7 @@ int getSystemSampleRate() { return systemSampleRate; }
 vector* getInputBuffer() { return &inputBuffer; }
 // end
 
-void init(float minBpm, float maxBpm, int sampleRate) {
+void init(float minBpm, float maxBpm, int sampleRate, float filterStrength) {
     systemSampleRate = sampleRate;
     int combSizeMin = combSizeFromBpm(maxBpm, sampleRate);
 	int combSizeMax = combSizeFromBpm(minBpm, sampleRate);
@@ -40,7 +41,7 @@ void init(float minBpm, float maxBpm, int sampleRate) {
         HPF_DENOM, 
         HPF_NUM
     );
-    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1);
+    combFilters = newCombFilterSet(combSizeMin, combSizeMax - combSizeMin + 1, filterStrength);
 }
 
 strengthResult findBestStrength() {
@@ -49,7 +50,7 @@ strengthResult findBestStrength() {
         float strength = calculateStrength(
             combFilters.combFilters[i].state,
             combFilters.combFilters[i].state.size,
-            combFilters.combFilters[i].stateSizeReciprocal
+            combFilters.combFilters[i].sizeReciprocal
         );
         if (strength > bestResult.strength) {
             bestResult.strength = strength;
@@ -63,7 +64,7 @@ strengthResult updateFilterChain(float sample) {
     insertSample(&inputBuffer, sample);
     updateFilter(&hpfFilter, &inputBuffer);
     for (int i = 0; i < combFilters.filterCount; i++) {
-        updateFilter(&combFilters.combFilters[i], &hpfFilter.state);
+        updateCombFilter(&combFilters.combFilters[i], &hpfFilter.state);
     }
     return findBestStrength();
 }

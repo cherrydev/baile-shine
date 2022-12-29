@@ -10,14 +10,21 @@ typedef struct{
 	  The filter implementation finishes each round by dividing the sum by the first value of the denom coeffs.
 	  Multiply by reciprocal instead
 	*/
-	float numZeroReciprocal;
+	float denomZeroReciprocal;
 	float stateSizeReciprocal;
 	vector numCoeffs;
 	vector state;
 }iirFilter;
 
 typedef struct{
-	iirFilter *combFilters;
+	float strength;
+	float sizeReciprocal;
+	int size;
+	vector state;
+}combFilter;
+
+typedef struct{
+	combFilter *combFilters;
 	int firstFilterSize;
 	int filterCount;
 }combFilterSet;

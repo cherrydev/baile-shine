@@ -1,24 +1,37 @@
 // Include MicroPython API.
 #include "py/runtime.h"
-#include "iir.h"
+#include "bpm_filter_chain.h"
 
-STATIC mp_obj_t process_signal() {
-    processSignalFile();
+// args(minBpm, maxBpm, sampleRate, filterStrength)
+STATIC mp_obj_t mp_module_init(size_t n_args, const mp_obj_t *args) {
+    init(
+        mp_obj_get_float_to_f(args[0]), // minBpm
+        mp_obj_get_float_to_f(args[1]), // maxBpm
+        mp_obj_get_int(args[2]), // sampleRate
+        mp_obj_get_float_to_f(args[3]) // filterStrength
+    );
     return mp_const_none;
 }
 
-// This is the function which will be called from Python as cexample.add_ints(a, b).
-STATIC mp_obj_t example_add_ints(mp_obj_t a_obj, mp_obj_t b_obj) {
-    // Extract the ints from the micropython input objects.
-    int a = mp_obj_get_int(a_obj);
-    int b = mp_obj_get_int(b_obj);
-
-    // Calculate the addition and convert to MicroPython object.
-    return mp_obj_new_int(a + b);
+STATIC mp_obj_t mp_updateFilter_chain(mp_obj_t newSample) {
+    updateFilterChain(mp_obj_get_float_to_f(newSample));
+    return mp_const_none;
 }
+
+STATIC mp_obj_t mp_findBestStrength() {
+    strengthResult bestStrength = findBestStrength();
+    mp_obj_t tuple[2] = {
+        mp_obj_new_int(bestStrength.filterSize),
+        mp_obj_new_float(bestStrength.strength)
+    };
+    return mp_obj_new_tuple(2, tuple);
+}
+
 // Define a Python reference to the function above.
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(example_add_ints_obj, example_add_ints);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(process_signal_obj, process_signal);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR(mp_module_init_obj, 4, mp_module_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(updateFilterChain_obj, mp_updateFilter_chain);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(findBestStrength_obj, mp_findBestStrength);
+
 
 // Define all properties of the module.
 // Table entries are key/value pairs of the attribute name (a string)
@@ -27,8 +40,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(process_signal_obj, process_signal);
 // optimized to word-sized integers by the build system (interned strings).
 STATIC const mp_rom_map_elem_t example_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_cexample) },
-    { MP_ROM_QSTR(MP_QSTR_add_ints), MP_ROM_PTR(&example_add_ints_obj) },
-    { MP_ROM_QSTR(MP_QSTR_process_signal), MP_ROM_PTR(&process_signal_obj) },
+    { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&mp_module_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_updateFilterChain), MP_ROM_PTR(&updateFilterChain_obj) },
+    { MP_ROM_QSTR(MP_QSTR_findBestStrength), MP_ROM_PTR(&findBestStrength_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(example_module_globals, example_module_globals_table);
 
