@@ -79,6 +79,12 @@ class InputMock:
         assert (len(result) == n)
 
         return result
+    
+    def read_all_samples(self):
+        remain_len = ((self.loop_end - self.cur)
+            + self.cur_loop_count * (self.loop_end - self.loop_beg)
+            + (len(self.data) - self.loop_end))
+        return self.read_samples(remain_len)
 
     def reset(self):
         self.cur_loop_count = self.loop_count
